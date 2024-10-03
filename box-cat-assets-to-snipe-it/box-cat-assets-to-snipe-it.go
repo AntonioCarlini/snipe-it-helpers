@@ -1,5 +1,36 @@
 package main
 
+// This helper program converts data from my spreadsheet catalogue to a file that is suitable
+// as an input to the Snipe-IT asset management system.
+// It expects the spreadsheet to be converted to a CSV file and takes that CSV file as input.
+//
+// It expects to see data records with items in this order:
+// A box Label, "fullness", "sealed", text indicating a location and finally
+// free form text indicating the item being recorded.
+// Any further items are ignored.
+// "fullness" and "sealed" describe the space remaining in the box and how the box is closed,
+// but these are not relevant to Snipe-IT and are not used.
+//
+// The spreadsheet has freeform text lines describing its use at the beginning, so everything is
+// ignored until a line is seen with the first item "Box" and the second item "Fullness". After
+// that almost all lines are processed as data.
+//
+// Any data lines with a box label stating in "Verification V" is dropped. It is however checked to
+// ensure that the remaining fields are correct. This is simply a sanity check on the input data
+// and has no effect on the output.
+//
+// Any data lines with a box name but no other items are discarded.
+//
+// Data lines with certain "fullness" values are subject to special checks but are not output.
+// The special processing happens for entries with a "fullness" of "Empty", "Destroyed",
+// "Unassigned", "not printed" and "printed-unused".
+//
+// For any other data line, it is output with the item description, its category, a synthesised tag
+// made up of the box label and the numeric date and time, the location.
+// Furthermore the  box label is recorded in a custom field "BoxName".
+// The "Model Name" is recorded as "Generic Model"; note that this refers to a Snipe-IT field and
+// not necessarily an attribute of the asset.
+
 import (
 	"encoding/csv"
 	"flag"
