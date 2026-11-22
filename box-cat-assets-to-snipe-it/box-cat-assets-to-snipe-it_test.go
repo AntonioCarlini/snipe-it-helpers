@@ -1,8 +1,9 @@
 package main
 
 import (
-       "encoding/csv"
-       "os"
+	"encoding/csv"
+        "io"
+        "os"
 	"path/filepath"
 	"reflect"
         "regexp"
@@ -181,5 +182,59 @@ func TestWriteSnipeITCSV_RoundTrip(t *testing.T) {
 				t.Errorf("row %d col %d (%s) = %q, want %q", i+1, c.col, wantHeader[c.col], row[c.col], c.want)
 			}
 		}
+	}
+}
+
+func writeTempCSV(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "in.csv")
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// captureStdout runs f and returns whatever it printed to stdout.
+func captureStdout(t *testing.T, f func()) string {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	f()
+	w.Close()
+	os.Stdout = old
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out)
+}
+
+const catHeader = "Box,Fullness,Sealed,Location,Category,Contents\n"
+
+func TestProcessBoxCatContents_Warnings(t *testing.T) {
+	cases := []struct {
+		name, row, wantMsg string // wantMsg == "" means no output expected
+	}{
+		{"good verification", "Verification V1,V1,V1,V1,V1,V1", ""},
+		{"bad verification", "Verification V1,V1,V1,X,V1,V1", "Badly formatted verification line"},
+		{"empty box with data", "QQ01,Empty,,,,Stuff", "Empty box with data"},
+		{"destroyed with data", "QQ01,Destroyed,Yes,,,", "Destroyed box with data"},
+		{"no contents", "QQ01,Full,Yes,Garage,Misc,", "Unhandled no data stat"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			path := writeTempCSV(t, catHeader+c.row+"\n")
+			out := captureStdout(t, func() { processBoxCatContents(path) })
+			if c.wantMsg == "" && out != "" {
+				t.Errorf("unexpected output: %q", out)
+			}
+			if c.wantMsg != "" && !strings.Contains(out, c.wantMsg) {
+				t.Errorf("output %q does not contain %q", out, c.wantMsg)
+			}
+		})
 	}
 }
