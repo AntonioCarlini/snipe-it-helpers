@@ -137,12 +137,16 @@ func WriteSnipeITCSV(filename string, snipeData []SnipeITRecord) {
 
 func BuildSnipeITContents(boxCatrecords []BoxCatRecord) []SnipeITRecord {
 	var snipeITrecords []SnipeITRecord
+        currentTime := time.Now()
+       	stamp := fmt.Sprintf("%04d%02d%02d%02d%02d%02d",
+        	currentTime.Year(), int(currentTime.Month()), currentTime.Day(),
+		currentTime.Hour(), currentTime.Minute(), currentTime.Second())
+
+
 	for index, entry := range boxCatrecords {
 		var data SnipeITRecord
 
-		currentTime := time.Now()
-		tag := fmt.Sprintf("%4d%02d%02d%02d%02d%02d-%08d", currentTime.Year(), currentTime.Month, currentTime.Day(), currentTime.Hour(), currentTime.Minute(), currentTime.Second(), index)
-
+                tag := fmt.Sprintf("%s-%08d", stamp, index)
 		data.FullName = ""
 		data.Email = ""
 		data.Username = ""
