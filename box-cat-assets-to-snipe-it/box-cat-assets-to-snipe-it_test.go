@@ -1,7 +1,8 @@
 package main
 
 import (
-	"os"
+       "encoding/csv"
+       "os"
 	"path/filepath"
 	"reflect"
         "regexp"
@@ -118,5 +119,67 @@ func TestBuildSnipeITContents_FieldsAndTags(t *testing.T) {
 func TestBuildSnipeITContents_Empty(t *testing.T) {
 	if got := BuildSnipeITContents(nil); len(got) != 0 {
 		t.Errorf("got %d records for empty input, want 0", len(got))
+	}
+}
+
+func TestWriteSnipeITCSV_RoundTrip(t *testing.T) {
+	recs := []SnipeITRecord{
+		{
+			ItemName:  `Cable, "special" (2 off) [KEEP]`,
+			Category:  "Connector",
+			ModelName: "Generic-Model",
+			AssetTag:  "QQ01-20260101000000-00000000",
+			Location:  "Garage",
+			BoxName:   "QQ01",
+		},
+		{
+			ItemName:  "DB25M ↔ DB25M",
+			Category:  "",
+			ModelName: "Generic-Model",
+			AssetTag:  "PSU Box (ex Wine Box)-20260101000000-00000001",
+			BoxName:   "PSU Box (ex Wine Box)",
+		},
+	}
+
+	path := filepath.Join(t.TempDir(), "out.csv")
+	WriteSnipeITCSV(path, recs)
+
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	rows, err := csv.NewReader(f).ReadAll() // also fails if column counts are inconsistent
+	if err != nil {
+		t.Fatalf("output is not valid CSV: %v", err)
+	}
+
+	if len(rows) != 3 {
+		t.Fatalf("got %d rows, want 3 (header + 2)", len(rows))
+	}
+
+	wantHeader := []string{"Full Name", "Email", "Username", "item Name", "Category", "Model name",
+		"Manufacturer", "Model Number", "Serial number", "Asset Tag", "Location", "Notes",
+		"Purchase Date", "Purchase Cost", "Company", "Status", "Warranty", "Supplier", "BoxName"}
+	if !reflect.DeepEqual(rows[0], wantHeader) {
+		t.Errorf("header mismatch\n got: %v\nwant: %v", rows[0], wantHeader)
+	}
+
+	// Columns by position: 3=item Name, 4=Category, 9=Asset Tag, 10=Location, 18=BoxName
+	for i, rec := range recs {
+		row := rows[i+1]
+		checks := []struct {
+			col  int
+			want string
+		}{
+			{3, rec.ItemName}, {4, rec.Category}, {9, rec.AssetTag},
+			{10, rec.Location}, {18, rec.BoxName},
+		}
+		for _, c := range checks {
+			if row[c.col] != c.want {
+				t.Errorf("row %d col %d (%s) = %q, want %q", i+1, c.col, wantHeader[c.col], row[c.col], c.want)
+			}
+		}
 	}
 }
