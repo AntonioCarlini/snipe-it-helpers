@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/csv"
-        "io"
-        "os"
+	"io"
+	"os"
 	"path/filepath"
 	"reflect"
-        "regexp"
-        "strings"
+	"regexp"
+	"strings"
 	"testing"
 )
 
