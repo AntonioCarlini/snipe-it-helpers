@@ -238,3 +238,26 @@ func TestProcessBoxCatContents_Warnings(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessBoxCatContents_DroppedStates(t *testing.T) {
+	cases := []struct{ name, row string }{
+		{"empty lower", "QQ01,empty,,,,"},
+		{"empty title", "QQ01,Empty,,,,"},
+		{"empty upper", "QQ01,EMPTY,,,,"},
+		{"destroyed padded", "QQ01, Destroyed ,,,,"},
+		{"unassigned", "QQ01,unassigned,,,,"},
+		{"not printed", "QQ01,Not Printed,,,,"},
+		{"printed-unused", "QQ01,printed-unused,,,,"},
+		{"empty but with contents", "QQ01,Empty,,Garage,Misc,Stuff"},
+		{"verification upper", "VERIFICATION V2,V2,V2,V2,V2,V2"},
+		{"verification lower", "verification v3,V3,V3,V3,V3,V3"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			path := writeTempCSV(t, catHeader+c.row+"\n")
+			if got := processBoxCatContents(path); len(got) != 0 {
+				t.Errorf("row %q should be dropped, got %+v", c.row, got)
+			}
+		})
+	}
+}
