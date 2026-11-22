@@ -261,3 +261,9 @@ func TestProcessBoxCatContents_DroppedStates(t *testing.T) {
 		})
 	}
 }
+func TestProcessBoxCatContents_NoHeader(t *testing.T) {
+	path := writeTempCSV(t, "some,text,,,,\nQQ01,Full,Yes,Garage,Misc,Thing\n")
+	if got := processBoxCatContents(path); len(got) != 0 {
+		t.Errorf("expected nothing without a Box/Fullness header, got %+v", got)
+	}
+}
