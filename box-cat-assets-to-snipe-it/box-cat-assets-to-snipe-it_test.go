@@ -282,3 +282,11 @@ func TestBuildSnipeITContents_UniqueTags(t *testing.T) {
 	}
 }
 
+func TestProcessBoxCatContents_CRLF(t *testing.T) {
+	input := strings.ReplaceAll(catHeader+"QQ01,Full,Yes,Garage,Misc,Thing\n", "\n", "\r\n")
+	got := processBoxCatContents(writeTempCSV(t, input))
+	if len(got) != 1 || got[0].Contents != "Thing" {
+		t.Errorf("unexpected result with CRLF input: %+v", got)
+	}
+}
+
