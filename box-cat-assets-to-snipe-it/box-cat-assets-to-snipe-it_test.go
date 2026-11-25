@@ -267,3 +267,18 @@ func TestProcessBoxCatContents_NoHeader(t *testing.T) {
 		t.Errorf("expected nothing without a Box/Fullness header, got %+v", got)
 	}
 }
+
+func TestBuildSnipeITContents_UniqueTags(t *testing.T) {
+	in := make([]BoxCatRecord, 1000)
+	for i := range in {
+		in[i] = BoxCatRecord{BoxName: "QQ01", Contents: "x"} // same box every time
+	}
+	seen := map[string]bool{}
+	for _, rec := range BuildSnipeITContents(in) {
+		if seen[rec.AssetTag] {
+			t.Fatalf("duplicate asset tag %q", rec.AssetTag)
+		}
+		seen[rec.AssetTag] = true
+	}
+}
+
